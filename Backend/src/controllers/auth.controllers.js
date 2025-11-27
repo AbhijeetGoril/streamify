@@ -135,7 +135,7 @@ export async function onboard(req, res) {
           !nativeLanguage &&"nativeLanguage",
           !learningLanguage && "learningLanguage",
           !location&& "location"
-        ]
+        ].filter(Boolean)
       })
     }
     const updateduser=await User.findByIdAndUpdate(userId,{
@@ -148,6 +148,16 @@ export async function onboard(req, res) {
     },{new:true})
     if(!updateduser){
       return res.status(404).json({message:"User not found"})
+    }
+    try {
+      await upsertUser({
+        id:updateduser._id.toString(),
+        name:updateduser.fullName,
+        image:updateduser.profilePic||""
+      })
+
+    } catch (error) {
+      return res.status(401).json({message:"Error while update the user on stream chat ",errors:error.message})
     }
     res.status(200).json({success:true,updateduser})
   } catch (error) {

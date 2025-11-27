@@ -11,4 +11,12 @@ route.post("/logout",logout)
 
 route.post("/onboarding",protectRoute,onboard)
 
+route.get("/me",protectRoute,(req,res)=>{
+  try {
+    return res.status(200).json({success:true,user:req.user})
+  } catch (error) {
+    res.status(500).json({success:false,message:error.message})
+  }
+})
+
 export default route;
