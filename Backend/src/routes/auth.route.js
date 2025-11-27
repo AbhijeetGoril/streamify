@@ -1,5 +1,5 @@
 import express from "express"
-import { login, logout, onboard, signup } from "../controllers/auth.controllers.js";
+import { login, logout, onboard, signup, verifyEmail } from "../controllers/auth.controllers.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 const route=express.Router();
 
@@ -18,5 +18,7 @@ route.get("/me",protectRoute,(req,res)=>{
     res.status(500).json({success:false,message:error.message})
   }
 })
+
+route.get("/verify-email/:token", verifyEmail);
 
 export default route;

@@ -46,8 +46,16 @@ const userSchema = new mongoose.Schema({
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User"
-    }
-  ]
+    },
+  ],
+  isVerified:{type:Boolean,default:false},
+  emailVerificationToken: String,
+  emailVerificationExpires: Date,
+
+  // 🔥 Forget Password Fields
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
+
 }, { timestamps: true });
 
 userSchema.methods.matchPassword= async function (enteredPassword) {

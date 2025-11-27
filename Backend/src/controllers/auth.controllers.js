@@ -1,73 +1,144 @@
 import User from "../modules/User.js";
 import jwt from "jsonwebtoken";
-import { StreamChat } from "stream-chat";
 import { upsertUser } from "../lib/stream.js";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
+
 
 
 export async function signup(req, res) {
   const { email, fullName, password } = req.body;
-  console.log("hello")
+
   try {
     if (!email || !fullName || !password) {
-      return res.status(400).json({ message: "All filed is required" });
+      return res.status(400).json({ message: "All fields are required" });
     }
+
     if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "Password must have be at least 6 charactors" });
+      return res.status(400).json({
+        message: "Password must be at least 6 characters long",
+      });
     }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
-    const user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({ message: "This email is already exits" });
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: "Email already exists" });
     }
+
+    // Generate a random avatar
     const idx = Math.floor(Math.random() * 100) + 1;
     const profilePic = `https://avatar.iran.liara.run/public/${idx}.png`;
-    // 2. Create new user (pre-save hook will hash password)
+
+    // Generate email verification token
+    const verifyToken = crypto.randomBytes(32).toString("hex");
+    const tokenExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+
+    // Create user
     const newUser = await User.create({
       email,
       fullName,
       password,
       profilePic,
+      isVerified: false,
+      emailVerificationToken: verifyToken,
+      emailVerificationExpires: tokenExpire,
     });
-   
-    //  Create user in Stream Chat
-    await upsertUser({
-      id:newUser._id.toString(),
-      name:newUser.fullName,
-      email:newUser.email,
-      image:newUser.profilePic||""
-    })
 
-    // Create Stream token (frontend will use this)
-    // const streamToken= streamClient.createToken(newUser._id.toString())
+    // Backend verification URL
+    const verifyURL = `http://localhost:5001/api/auth/verify-email/${verifyToken}`;
 
-    
-    const token = jwt.sign(
-      { userId: newUser._id },
-      process.env.JWT_SECRET_KEY,
-      { expiresIn: "7d" }
-    );
-
-    res.cookie("jwt", token, {
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      httpOnly: true,
-      sameSite: "strict", // ✔ correct capitalization
-      secure: process.env.NODE_ENV === "production", // works only on HTTPS
+    // Setup nodemailer
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+       user: "abhijeetgorilz@gmail.com", 
+      pass: "tmeueuuopvppgkaq", 
+      },
     });
+
+    // Email HTML content
+    const html = `
+      <h2>Verify Your Email</h2>
+      <p>Hello <b>${fullName}</b>,</p>
+      <p>Click the button below to verify your email:</p>
+      <a href="${verifyURL}" target="_blank">
+        <button style="padding:10px 20px; background:#4CAF50; color:white; border:none; border-radius:5px;">
+          Verify Email
+        </button>
+      </a>
+      <p>If the button doesn’t work, copy and paste this URL:</p>
+      <p>${verifyURL}</p>
+      <p>This link expires in 15 minutes.</p>
+    `;
+
+    // Send email
+    await transporter.sendMail({
+      from: `"Streamify" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Verify Your Email - Streamify",
+      html,
+    });
+
     return res.status(201).json({
-      message: "User created successfully",
-      user: newUser,
+      success: true,
+      message: "Signup successful! Verification email sent.",
+      verifyURL, // shows in postman for testing
+      user: {
+        id: newUser._id,
+        fullName: newUser.fullName,
+        email: newUser.email,
+      },
     });
+
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Internal server Error", error: error.message });
+    console.error("Signup Error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 }
+
+export async function verifyEmail(req, res) {
+  try {
+    const { token } = req.params;
+
+    // Find user with valid token
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid or expired verification token"
+      });
+    }
+
+    // Mark as verified
+    user.isVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully!"
+    });
+
+  } catch (error) {
+    console.error("Verify email error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
 
 export async function login(req, res) {
   try {
@@ -76,7 +147,10 @@ export async function login(req, res) {
       return res.status(400).json({ message: "All filed is required" });
     }
     const user = await User.findOne({ email });
-    console.log(user);
+    if(!user.$isValid){
+      ret
+    }
+
     if (!user) {
       return res.status(401).json({ message: "Email or password is invalid" });
     }
@@ -164,3 +238,5 @@ export async function onboard(req, res) {
     res.status(500).json({message:error.message})
   }
 }
+
+
