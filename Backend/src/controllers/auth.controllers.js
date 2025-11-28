@@ -48,14 +48,14 @@ export async function signup(req, res) {
     });
 
     // Backend verification URL
-    const verifyURL = `http://localhost:5001/api/auth/verify-email/${verifyToken}`;
+    const verifyURL = `${process.env.CLIENT_URL}/api/auth/verify-email/${verifyToken}`;
 
     // Setup nodemailer
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "abhijeetgorilz@gmail.com",
-        pass: "tmeueuuopvppgkaq",
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
@@ -282,7 +282,7 @@ export async function fotgotPassword(req,res) {
     }
     const resetToken=crypto.randomBytes(32).toString("hex")
     const resetExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
-    user.resetPasswordToken = resetToken;
+    user.resetPasswordToken = resetToken
     user.resetPasswordExpires = resetExpire;
     await user.save();
     const resetURL = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
@@ -291,8 +291,8 @@ export async function fotgotPassword(req,res) {
     const transporter=nodemailer.createTransport({
       service:"gmail",
       auth: {
-        user: "abhijeetgorilz@gmail.com",
-        pass: "tmeueuuopvppgkaq",
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     })
 
