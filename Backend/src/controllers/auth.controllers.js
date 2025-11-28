@@ -4,8 +4,6 @@ import { upsertUser } from "../lib/stream.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 
-
-
 export async function signup(req, res) {
   const { email, fullName, password } = req.body;
 
@@ -56,8 +54,8 @@ export async function signup(req, res) {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-       user: "abhijeetgorilz@gmail.com", 
-      pass: "tmeueuuopvppgkaq", 
+        user: "abhijeetgorilz@gmail.com",
+        pass: "tmeueuuopvppgkaq",
       },
     });
 
@@ -81,20 +79,20 @@ export async function signup(req, res) {
       from: `"Streamify" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Verify Your Email - Streamify",
+      
       html,
     });
 
     return res.status(201).json({
       success: true,
       message: "Signup successful! Verification email sent.",
-      verifyURL, // shows in postman for testing
       user: {
         id: newUser._id,
         fullName: newUser.fullName,
         email: newUser.email,
       },
+      verifyURL,
     });
-
   } catch (error) {
     console.error("Signup Error:", error);
     return res.status(500).json({
@@ -111,12 +109,12 @@ export async function verifyEmail(req, res) {
     // Find user with valid token
     const user = await User.findOne({
       emailVerificationToken: token,
-      emailVerificationExpires: { $gt: Date.now() }
+      emailVerificationExpires: { $gt: Date.now() },
     });
 
     if (!user) {
       return res.status(400).json({
-        message: "Invalid or expired verification token"
+        message: "Invalid or expired verification token",
       });
     }
 
@@ -127,18 +125,35 @@ export async function verifyEmail(req, res) {
 
     await user.save();
 
-    return res.status(200).json({
-      success: true,
-      message: "Email verified successfully!"
+    // Create JWT for auto-login
+    const authToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "7d" }
+    );
+
+    // Set cookie
+    res.cookie("jwt", authToken, {
+      maxAge: 7 * 24 * 60 * 60 * 24 * 1000,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
     });
 
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully!",
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+      },
+      token: authToken, // optional, for frontend debugging
+    });
   } catch (error) {
     console.error("Verify email error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
-
-
 
 export async function login(req, res) {
   try {
@@ -147,12 +162,13 @@ export async function login(req, res) {
       return res.status(400).json({ message: "All filed is required" });
     }
     const user = await User.findOne({ email });
-    if(!user.$isValid){
-      ret
-    }
 
+    console.log(user);
     if (!user) {
       return res.status(401).json({ message: "Email or password is invalid" });
+    }
+    if (!user.isVerified) {
+      return res.status(400).json({ message: "Your email is not verified" });
     }
     const isPasswordCorrect = await user.matchPassword(password);
     if (!isPasswordCorrect) {
@@ -163,7 +179,7 @@ export async function login(req, res) {
     });
 
     res.cookie("jwt", token, {
-      maxAge: 7 * 24 * 60 * 60 * 24,
+      maxAge: 7 * 24 * 60 * 60 * 24 * 1000,
       sameSite: "strict",
       secure: process.env.NODE_ENV === "production", // works only on HTTPS
     });
@@ -198,45 +214,158 @@ export async function logout(req, res) {
 
 export async function onboard(req, res) {
   try {
-    const userId=req.user._id;
-    const {fullName,bio,nativeLanguage,learningLanguage,location}=req.body
-    if(!fullName || !bio || !nativeLanguage || !learningLanguage|| !location){
+    const userId = req.user._id;
+    const { fullName, bio, nativeLanguage, learningLanguage, location } =
+      req.body;
+    if (
+      !fullName ||
+      !bio ||
+      !nativeLanguage ||
+      !learningLanguage ||
+      !location
+    ) {
       return res.status(400).json({
-        message:"All fiedls are required",
-        missingFields:[
+        message: "All fiedls are required",
+        missingFields: [
           !fullName && "fullName",
           !bio && "bio",
-          !nativeLanguage &&"nativeLanguage",
+          !nativeLanguage && "nativeLanguage",
           !learningLanguage && "learningLanguage",
-          !location&& "location"
-        ].filter(Boolean)
-      })
+          !location && "location",
+        ].filter(Boolean),
+      });
     }
-    const updateduser=await User.findByIdAndUpdate(userId,{
-      fullName,
-      bio,
-      location,
-      learningLanguage,
-      nativeLanguage,
-      isOnboarded:true
-    },{new:true})
-    if(!updateduser){
-      return res.status(404).json({message:"User not found"})
+    const updateduser = await User.findByIdAndUpdate(
+      userId,
+      {
+        fullName,
+        bio,
+        location,
+        learningLanguage,
+        nativeLanguage,
+        isOnboarded: true,
+      },
+      { new: true }
+    );
+    if (!updateduser) {
+      return res.status(404).json({ message: "User not found" });
     }
     try {
       await upsertUser({
-        id:updateduser._id.toString(),
-        name:updateduser.fullName,
-        image:updateduser.profilePic||""
-      })
-
+        id: updateduser._id.toString(),
+        name: updateduser.fullName,
+        image: updateduser.profilePic || "",
+      });
     } catch (error) {
-      return res.status(401).json({message:"Error while update the user on stream chat ",errors:error.message})
+      return res.status(401).json({
+        message: "Error while update the user on stream chat ",
+        errors: error.message,
+      });
     }
-    res.status(200).json({success:true,updateduser})
+    res.status(200).json({ success: true, updateduser });
   } catch (error) {
-    res.status(500).json({message:error.message})
+    res.status(500).json({ message: error.message });
   }
 }
 
 
+export async function fotgotPassword(req,res) {
+  try {
+    const {email}=req.body;
+
+    if(!email){
+      return res.status(400).json({message:"Email is required"})
+    }
+    const user=await User.findOne({email})
+    if(!user){
+      return res.status(404).json({message:"Email not found"})
+    }
+    const resetToken=crypto.randomBytes(32).toString("hex")
+    const resetExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetExpire;
+    await user.save();
+    const resetURL = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+ 
+
+    const transporter=nodemailer.createTransport({
+      service:"gmail",
+      auth: {
+        user: "abhijeetgorilz@gmail.com",
+        pass: "tmeueuuopvppgkaq",
+      },
+    })
+
+
+    // Email content
+    const html = `
+      <h2>Reset Your Password</h2>
+      <p>Hello ${user.fullName},</p>
+      <p>Click the button below to reset your password:</p>
+      
+      <a href="${resetURL}" target="_blank">
+        <button style="padding:10px 20px; background:#2196F3; color:white; border:none; border-radius:5px;">
+          Reset Password
+        </button>
+      </a>
+
+      <p>If the button doesn’t work, copy this link:</p>
+      <p>${resetURL}</p>
+
+      <p>This link expires in 15 minutes.</p>
+    `;
+
+    // Send email
+    await transporter.sendMail({
+      from: `"Streamify" <abhijeetgorilz@gmail.com>`,
+      to: email,
+      subject: "Reset Your Password",
+      html,
+    });
+
+
+    return res.status(200).json({
+      success: true,
+      message: "Reset password email sent!",
+    });
+
+  } catch (err) {
+    console.error("Forgot Password Error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function resetPassword(req,res) {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    user.password = password; 
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully!"
+    });
+
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}

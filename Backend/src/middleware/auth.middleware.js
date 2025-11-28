@@ -15,6 +15,9 @@ export const protectRoute=async(req,res,next)=>{
     if(!user){
       return res.status(401).json({message:"Unauthorized - user not found"})
     }
+    if(!user.isVerified){
+      return res.status(401).json({message:"email is not verifed"})
+    }
     req.user=user
     next()
   } catch (error) {
