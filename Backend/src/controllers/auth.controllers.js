@@ -2,7 +2,8 @@ import User from "../modules/User.js";
 import jwt from "jsonwebtoken";
 import { upsertUser } from "../lib/stream.js";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+
+import { sendEmail } from "../utils/sendMail.js";
 
 export async function signup(req, res) {
   const { email, fullName, password } = req.body;
@@ -50,14 +51,6 @@ export async function signup(req, res) {
     // Backend verification URL
     const verifyURL = `${process.env.CLIENT_URL}/api/auth/verify-email/${verifyToken}`;
 
-    // Setup nodemailer
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
 
     // Email HTML content
     const html = `
@@ -74,14 +67,20 @@ export async function signup(req, res) {
       <p>This link expires in 15 minutes.</p>
     `;
 
-    // Send email
-    await transporter.sendMail({
-      from: `"Streamify" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Verify Your Email - Streamify",
-      
-      html,
-    });
+    await sendEmail(email, "Verify Your Email - Streamify", html);
+
+    try {
+      await upsertUser({
+        id: newUser._id.toString(),
+        name: newUser.fullName,
+        image: newUser.profilePic || "",
+      });
+    } catch (error) {
+      return res.status(401).json({
+        message: "Error while update the user on stream chat ",
+        errors: error.message,
+      });
+    }
 
     return res.status(201).json({
       success: true,
@@ -162,13 +161,40 @@ export async function login(req, res) {
       return res.status(400).json({ message: "All filed is required" });
     }
     const user = await User.findOne({ email });
-
-    console.log(user);
     if (!user) {
       return res.status(401).json({ message: "Email or password is invalid" });
     }
-    if (!user.isVerified) {
-      return res.status(400).json({ message: "Your email is not verified" });
+     if (!user.isVerified) {
+
+      // Generate new verification token
+      const verifyToken = crypto.randomBytes(32).toString("hex");
+      user.emailVerificationToken = verifyToken;
+      user.emailVerificationExpires = Date.now() + 15 * 60 * 1000;
+
+      await user.save();
+
+      // Create link
+      const verifyURL = `${process.env.CLIENT_URL}/api/auth/verify-email/${verifyToken}`;
+
+      // Email HTML
+      const html = `
+        <h2>Email Verification Required</h2>
+        <p>Hello <b>${user.fullName}</b>,</p>
+        <p>You tried to access protected content but your email is still not verified.</p>
+        <p>Click the button below to verify your email:</p>
+        <a href="${verifyURL}">
+          <button style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:5px;">
+            Verify Email
+          </button>
+        </a>
+      `;
+
+      // Send email (using your mail function)
+      await sendEmail(user.email, "Verify Your Email", html);
+
+      return res.status(401).json({
+        message: "Email not verified. A new verification link was sent to your email.",
+      });
     }
     const isPasswordCorrect = await user.matchPassword(password);
     if (!isPasswordCorrect) {
@@ -268,34 +294,31 @@ export async function onboard(req, res) {
   }
 }
 
-
-export async function fotgotPassword(req,res) {
+export async function fotgotPassword(req, res) {
   try {
-    const {email}=req.body;
+    const { email } = req.body;
 
-    if(!email){
-      return res.status(400).json({message:"Email is required"})
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
     }
-    const user=await User.findOne({email})
-    if(!user){
-      return res.status(404).json({message:"Email not found"})
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Email not found" });
     }
-    const resetToken=crypto.randomBytes(32).toString("hex")
+    const resetToken = crypto.randomBytes(32).toString("hex");
     const resetExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
-    user.resetPasswordToken = resetToken
+    user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = resetExpire;
     await user.save();
     const resetURL = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
- 
 
-    const transporter=nodemailer.createTransport({
-      service:"gmail",
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-    })
-
+    });
 
     // Email content
     const html = `
@@ -323,19 +346,17 @@ export async function fotgotPassword(req,res) {
       html,
     });
 
-
     return res.status(200).json({
       success: true,
       message: "Reset password email sent!",
     });
-
   } catch (err) {
     console.error("Forgot Password Error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
 
-export async function resetPassword(req,res) {
+export async function resetPassword(req, res) {
   try {
     const { token } = req.params;
     const { password } = req.body;
@@ -346,14 +367,14 @@ export async function resetPassword(req,res) {
 
     const user = await User.findOne({
       resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }
+      resetPasswordExpires: { $gt: Date.now() },
     });
 
     if (!user) {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
-    user.password = password; 
+    user.password = password;
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
 
@@ -361,9 +382,8 @@ export async function resetPassword(req,res) {
 
     return res.status(200).json({
       success: true,
-      message: "Password reset successfully!"
+      message: "Password reset successfully!",
     });
-
   } catch (error) {
     console.error("Reset Password Error:", error);
     return res.status(500).json({ message: "Internal server error" });

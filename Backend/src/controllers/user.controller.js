@@ -157,3 +157,49 @@ export async function getFriendRequests(req,res){
   }
 }
 
+export async function getOutgoingRequests(req,res){
+  try {
+    const outGoingRequest=await FriendRequest.find({
+      sender:req.user.id,
+      status:"pending"
+    }).populate("recipient","fullName profilePic nativeLanguage learningLanguage")
+
+    res.status(200).json(outGoingRequest)
+
+  } catch (error) {
+    console.error("Error in get the out going request:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function friendRequestReject(req,res){
+  try {
+     console.log("hlo")
+    const {requestId}=req.params
+    const friendRequest=await FriendRequest.findById(requestId)
+   
+    if(!friendRequest){
+      return res.status(404).json({ message: "Friend request not found" });
+    }
+
+    // Only the recipient can reject the request
+    if (friendRequest.recipient.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not allowed to reject this request" });
+    }
+    await FriendRequest.findByIdAndDelete(requestId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Friend request rejected successfully",
+      requestId
+    });
+
+  } catch (error) {
+    console.error("Error in reject the request:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+}

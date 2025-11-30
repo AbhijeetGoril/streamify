@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken"
 import User from "../modules/User.js"
+import { sendEmail } from "../utils/sendMail.js"
 
 export const protectRoute=async(req,res,next)=>{
   try {
@@ -15,8 +16,37 @@ export const protectRoute=async(req,res,next)=>{
     if(!user){
       return res.status(401).json({message:"Unauthorized - user not found"})
     }
-    if(!user.isVerified){
-      return res.status(401).json({message:"email is not verifed"})
+      if (!user.isVerified) {
+
+      // Generate new verification token
+      const verifyToken = crypto.randomBytes(32).toString("hex");
+      user.emailVerificationToken = verifyToken;
+      user.emailVerificationExpires = Date.now() + 15 * 60 * 1000;
+
+      await user.save();
+
+      // Create link
+      const verifyURL = `${process.env.CLIENT_URL}/api/auth/verify-email/${verifyToken}`;
+
+      // Email HTML
+      const html = `
+        <h2>Email Verification Required</h2>
+        <p>Hello <b>${user.fullName}</b>,</p>
+        <p>You tried to access protected content but your email is still not verified.</p>
+        <p>Click the button below to verify your email:</p>
+        <a href="${verifyURL}">
+          <button style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:5px;">
+            Verify Email
+          </button>
+        </a>
+      `;
+
+      // Send email (using your mail function)
+      await sendEmail(user.email, "Verify Your Email", html);
+
+      return res.status(401).json({
+        message: "Email not verified. A new verification link was sent to your email.",
+      });
     }
     req.user=user
     next()
