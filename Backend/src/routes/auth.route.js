@@ -1,5 +1,5 @@
 import express from "express"
-import { fotgotPassword, login, logout, onboard, resetPassword, signup, verifyEmail } from "../controllers/auth.controllers.js";
+import { checkVerificationStatus, forgotPassword, login, logout, onboard, resetPassword, signup, verifyEmail} from "../controllers/auth.controllers.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 const route=express.Router();
 
@@ -19,9 +19,11 @@ route.get("/me",protectRoute,(req,res)=>{
   }
 })
 
-route.post("/forgot-password",fotgotPassword)
+route.post("/forgot-password",forgotPassword)
 route.post("/reset-password/:token",resetPassword)
 
 route.get("/verify-email/:token", verifyEmail);
+route.get('/check-verification', checkVerificationStatus);
+
 
 export default route;

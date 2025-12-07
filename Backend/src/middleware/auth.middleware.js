@@ -4,17 +4,20 @@ import { sendEmail } from "../utils/sendMail.js"
 
 export const protectRoute=async(req,res,next)=>{
   try {
-    const token=req.cookies.jwt
+    const token=req.cookies.authToken
+
     if(!token){
-      return res.status(401).json({message:"Unauthorized - no token provided"})
+      return res.status(401).json({success: false,message:"Unauthorized - no token provided"})
     }
     const decode=jwt.verify(token,process.env.JWT_SECRET_KEY)
     if(!decode){
-      return res.status(401).json({message:"Unauthorized - Invalid token"})
+      return res.status(401).json({success: false,message:"Unauthorized - Invalid token"})
     }
+    
     const user =await User.findById(decode.userId).select("-password")
+    console.log(user)
     if(!user){
-      return res.status(401).json({message:"Unauthorized - user not found"})
+      return res.status(401).json({success: false,message:"Unauthorized - user not foundss"})
     }
       if (!user.isVerified) {
 
@@ -45,6 +48,7 @@ export const protectRoute=async(req,res,next)=>{
       await sendEmail(user.email, "Verify Your Email", html);
 
       return res.status(401).json({
+        success: false,
         message: "Email not verified. A new verification link was sent to your email.",
       });
     }

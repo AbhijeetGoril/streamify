@@ -1,30 +1,45 @@
-import { StreamChat } from "stream-chat";
-import "dotenv/config"
+import { StreamChat } from 'stream-chat';
+import 'dotenv/config'; // Add this at the very top
 
-const apiKey=process.env.STREAM_API_KEY
-const apiSecret=process.env.STREAM_API_SECRET
-if(!apiKey || !apiSecret){
-  console.log("Stream api key or sercert is missing")
-}
+const serverClient = StreamChat.getInstance(
+  process.env.STREAM_API_KEY,
+  process.env.STREAM_API_SECRET
+);
 
-const streamClient=StreamChat.getInstance(apiKey,apiSecret)
-
-export const upsertUser= async (userdata)=>{
+export const upsertUser = async (userData) => {
   try {
-    if (!userdata || !userdata.id) {
-      throw new Error("userdata.id is required for Stream user creation");
-    }
-    await streamClient.upsertUser(userdata)
-    return userdata
+    await serverClient.upsertUser({
+      id: userData.id,
+      name: userData.name,
+      image: userData.image || '',
+      role: 'user'
+    });
+    
+    console.log(`✅ Stream Chat user upserted: ${userData.name}`);
+    return { success: true };
   } catch (error) {
-    console.log("Error upserting Stream user:",error)
+    console.error('❌ Stream Chat error:', error.message);
+    // Don't throw - allow app to continue without Stream Chat
+    return { success: false, error: error.message };
   }
-}
-export const generateStreamToken=async(userId)=>{
+};
+
+export const createToken = (userId) => {
   try {
-    const userIdStr=userId.toString();
-    return  streamClient.createToken(userIdStr)
+    return serverClient.createToken(userId);
   } catch (error) {
-    console.log("Error generate Stream token:",error)
+    console.error('❌ Stream Chat token error:', error);
+    return null;
   }
-}
+};
+
+export const initializeStreamChat = async () => {
+  try {
+    const result = await serverClient.queryUsers({});
+    console.log(`✅ Stream Chat connected. Users: ${result.users.length}`);
+    return { connected: true };
+  } catch (error) {
+    console.error('❌ Stream Chat initialization error:', error);
+    return { connected: false, error: error.message };
+  }
+};
