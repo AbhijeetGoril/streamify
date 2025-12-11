@@ -139,7 +139,7 @@ const SignUp = () => {
               <input
                 type="text"
                 name="fullName"
-                placeholder="John Doe"
+                placeholder="Abhijeet Goril"
                 className={`input input-bordered w-full ${errors.fullName ? 'input-error' : ''}`}
                 value={signupData.fullName}
                 onChange={handleChange}

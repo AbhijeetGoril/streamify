@@ -2,54 +2,31 @@ import { Navigate, Route, Routes } from "react-router";
 import { BrowserRouter } from "react-router-dom"; // Add this import
 import HomePage from "./pages/HomePage";
 import SignUp from "./pages/SignUp";
-import OnBoradingPage from "./pages/OnBoradingPage";
+import OnboardingPage from "./pages/OnBoradingPage.jsx";
 import CallPage from "./pages/CallPage";
 import NotificationPage from "./pages/NotificationPage";
 import ChatPage from "./pages/ChatPage";
 import LoginPage from "./pages/LoginPage";
 import { Toaster } from "react-hot-toast";
-import { useQuery } from "@tanstack/react-query";
-import { axiosInstance } from "./lib/axois";
 
 // Add these imports for verification pages
 import VerifyInstructionsPage from "./pages/VerifyEmailPages.jsx/VerifyInstructionsPage";
 import VerificationSuccessPage from "./pages/VerifyEmailPages.jsx/VerificationSuccessPage";
 import VerificationFailedPage from "./pages/VerifyEmailPages.jsx/VerificationFailedPage";
 import VerifyEmailPage from "./pages/VerifyEmailPages.jsx/VerifyEmailPage";
+import ForgotPasswordPage from "./pages/ForgetPasswordPage";
+import ResetPasswordPage from "./pages/ ResetPasswordPage";
+import PageLoader from "./components/PageLoader.jsx";
+import { useAuthUser } from "./hooks/useAuthUser.js";
 
 function App() {
-  const {
-  data: authData,
-  isLoading,
-  error,
-  isError,
-} = useQuery({
-  queryKey: ["user"],
-  queryFn: async () => {
-    const res = await axiosInstance.get("/auth/me", { withCredentials: true });
-    return res.data;
-  },
-  retry: false,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
-  refetchOnMount: true,   // IMPORTANT ✅
-});
+  const { isLoading, authUser } = useAuthUser();
+  const isOnboarded = authUser?.isOnboarded;
 
-
-  console.log("📊 authData:", authData);
-  console.log("🔍 isLoading:", isLoading);
-  console.log("❌ isError:", isError);
-  console.log("💥 error:", error);
   if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center text-xl">
-        Checking authentication...
-      </div>
-    );
+    return <PageLoader />;
   }
 
-  const authUser = authData?.user;
-  console.log(authData);
   return (
     <BrowserRouter>
       {" "}
@@ -65,7 +42,14 @@ function App() {
             path="/login"
             element={!authUser ? <LoginPage /> : <Navigate to="/" />}
           />
-
+          <Route
+            path="/forgot-password"
+            element={!authUser ? <ForgotPasswordPage /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/reset-password/:token"
+            element={!authUser ? <ResetPasswordPage /> : <Navigate to="/" />}
+          />
           {/* Email verification routes (should be public) */}
           <Route
             path="/verify-instructions"
@@ -84,11 +68,15 @@ function App() {
           {/* Protected routes (require auth) */}
           <Route
             path="/"
-            element={authUser ? <HomePage /> : <Navigate to="/login" />}
+            element={
+              authUser && isOnboarded ? (
+                <HomePage />
+              ) : <Navigate to={!authUser?"/login":"/onboarding"}/>
+            }
           />
           <Route
-            path="/onborading"
-            element={authUser ? <OnBoradingPage /> : <Navigate to="/login" />}
+            path="/onboarding"
+            element={authUser ? <OnboardingPage /> : <Navigate to="/login" />}
           />
           <Route
             path="/call"

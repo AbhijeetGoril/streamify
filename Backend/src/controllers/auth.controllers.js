@@ -42,7 +42,7 @@ export async function signup(req, res) {
 
     // Generate a random avatar
     const idx = Math.floor(Math.random() * 100) + 1;
-    const profilePic = `https://avatar.iran.liara.run/public/${idx}.png`;
+    const profilePic = `https://api.dicebear.com/7.x/avataaars/svg?seed=${idx}`;
 
     // Generate email verification token
     const verifyToken = crypto.randomBytes(32).toString("hex");
@@ -547,7 +547,7 @@ export async function resetPassword(req, res) {
   try {
     const { token } = req.params;
     const { password } = req.body;
-
+    console.log(token)
     // Handle GET request (verify token)
     if (req.method === "GET") {
       const user = await User.findOne({
@@ -613,9 +613,9 @@ export async function resetPassword(req, res) {
 export async function onboard(req, res) {
   try {
     const userId = req.user._id; // ✅ Fixed: Use req.userId from auth middleware
-    const { bio, nativeLanguage, learningLanguage, location } = req.body;
+    const { bio, nativeLanguage, learningLanguage, location,profilePic } = req.body;
 
-    if (!bio || !nativeLanguage || !learningLanguage || !location) {
+    if (!bio || !nativeLanguage || !learningLanguage || !location || !profilePic) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
@@ -624,6 +624,7 @@ export async function onboard(req, res) {
           !nativeLanguage && "nativeLanguage",
           !learningLanguage && "learningLanguage",
           !location && "location",
+          !profilePic&&"profilePic"
         ].filter(Boolean),
       });
     }
@@ -631,6 +632,7 @@ export async function onboard(req, res) {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
+        profilePic,
         bio,
         nativeLanguage,
         learningLanguage,
