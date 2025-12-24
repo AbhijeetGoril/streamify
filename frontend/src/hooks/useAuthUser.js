@@ -9,3 +9,4 @@ export const useAuthUser = () => {
   });
   return {isLoading:authUser.isLoading,authUser:authUser.data?.user}
 };
+

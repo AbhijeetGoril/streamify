@@ -1,21 +1,24 @@
 // src/pages/LoginPage.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle, CheckCircle, UserPlus } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle, CheckCircle, UserPlus, ShipWheel } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { axiosInstance } from '../lib/axois.js';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   });
+  
   const [formErrors, setFormErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  const queryClient = useQueryClient();
 
   // Check for verification success message from location state
   useEffect(() => {
@@ -54,6 +57,11 @@ const LoginPage = () => {
         [name]: ''
       }));
     }
+    
+    // Clear general errors
+    if (formErrors.general || formErrors.submit) {
+      setFormErrors(prev => ({ ...prev, general: '', submit: '' }));
+    }
   };
 
   // Form validation
@@ -89,6 +97,7 @@ const LoginPage = () => {
     },
     onSuccess: (data) => {
       console.log('✅ Login successful:', data);
+      queryClient.setQueryData(["user"], { user: data.user });
       
       // Store user data in localStorage (but NOT tokens - they're in HTTP-only cookies)
       if (data.user) {
@@ -103,7 +112,7 @@ const LoginPage = () => {
       }
       
       // Redirect based on user status
-      const redirectPath = data.user.isOnboarded ? '/dashboard' : '/onboarding';
+      const redirectPath = data.user.isOnboarded ? '/homepage' : '/onboarding';
       const from = location.state?.from?.pathname || redirectPath;
       navigate(from, { replace: true });
     },
@@ -111,10 +120,14 @@ const LoginPage = () => {
       console.error('❌ Login failed:', error.response?.data);
       const errorData = error.response?.data;
       
-      // Handle specific error cases
-      if (errorData?.requiresVerification) {
+      // Handle different error types
+      if (error.code === 'ERR_NETWORK') {
+        setFormErrors({ submit: "Cannot connect to server. Make sure backend is running." });
+      } else if (error.code === 'ECONNABORTED') {
+        setFormErrors({ submit: "Request timeout. Server is taking too long to respond." });
+      } else if (errorData?.requiresVerification) {
         setFormErrors({
-          general: (
+          submit: (
             <div className="space-y-2">
               <p className="font-medium">Please verify your email first</p>
               <div className="flex gap-2">
@@ -137,15 +150,15 @@ const LoginPage = () => {
           )
         });
       } else if (errorData?.message === "Invalid credentials") {
-        setFormErrors({
-          general: 'Invalid email or password. Please try again.',
+        setFormErrors({ 
+          submit: 'Invalid email or password. Please try again.',
           email: 'Check your email address',
           password: 'Check your password'
         });
+      } else if (errorData?.message) {
+        setFormErrors({ submit: errorData.message });
       } else {
-        setFormErrors({
-          general: errorData?.message || 'Login failed. Please try again.'
-        });
+        setFormErrors({ submit: "Login failed. Please try again." });
       }
     }
   });
@@ -205,57 +218,60 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-base-100 to-base-200">
-      <div className="max-w-md w-full">
-        {/* Success Message from Email Verification */}
-        {successMessage && (
-          <div className="mb-6 animate-fade-in">
-            <div className="alert alert-success shadow-lg">
-              <CheckCircle className="w-5 h-5" />
-              <div className="flex-1">
-                <span className="font-medium">Success!</span>
-                <div className="text-xs opacity-90">{successMessage}</div>
-              </div>
-              <button 
-                onClick={() => setSuccessMessage('')}
-                className="btn btn-ghost btn-xs"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Login Card */}
-        <div className="bg-base-100 rounded-2xl shadow-xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-              <LogIn className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-            <p className="text-base-content/70">
-              Sign in to your account to continue
-            </p>
+      <div className="border border-primary/20 flex w-full max-w-5xl mx-auto bg-base-100 rounded-2xl shadow-2xl overflow-hidden">
+        {/* Left side form - Consistent with SignupPage */}
+        <div className="w-full lg:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col">
+          {/* Logo/Brand Header */}
+          <div className="mb-6 flex items-center justify-start gap-2">
+            <ShipWheel className="w-10 h-10 text-primary" />
+            <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
+              Streamify
+            </span>
           </div>
 
-          {/* Error Message */}
-          {formErrors.general && (
-            <div className="alert alert-error mb-6 animate-shake">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <div className="flex-1">
-                {typeof formErrors.general === 'string' ? (
-                  <span className="text-sm">{formErrors.general}</span>
-                ) : (
-                  formErrors.general
-                )}
+          {/* Success Message from Email Verification */}
+          {successMessage && (
+            <div className="mb-6 animate-fade-in">
+              <div className="alert alert-success shadow-lg">
+                <CheckCircle className="w-5 h-5" />
+                <div className="flex-1">
+                  <span className="font-medium">Success!</span>
+                  <div className="text-sm opacity-90">{successMessage}</div>
+                </div>
+                <button 
+                  onClick={() => setSuccessMessage('')}
+                  className="btn btn-ghost btn-sm"
+                >
+                  ✕
+                </button>
               </div>
             </div>
           )}
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="w-full space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold">Welcome Back</h2>
+              <p className="text-sm opacity-70 mt-1">
+                Sign in to your account to continue your language learning journey
+              </p>
+            </div>
+
+            {/* Error Message */}
+            {formErrors.submit && (
+              <div className="alert alert-error animate-shake">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <div className="flex-1">
+                  {typeof formErrors.submit === 'string' ? (
+                    <span className="text-sm">{formErrors.submit}</span>
+                  ) : (
+                    formErrors.submit
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Email Input */}
-            <div className="form-control">
+            <div className="form-control w-full">
               <label className="label">
                 <span className="label-text font-medium">Email Address</span>
               </label>
@@ -269,19 +285,15 @@ const LoginPage = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   className={`input input-bordered w-full pl-10 ${formErrors.email ? 'input-error' : ''}`}
-                  placeholder="you@example.com"
+                  placeholder="example@gmail.com"
                   autoComplete="email"
                 />
               </div>
-              {formErrors.email && (
-                <label className="label">
-                  <span className="label-text-alt text-error">{formErrors.email}</span>
-                </label>
-              )}
+              {formErrors.email && <span className="label-text-alt text-error">{formErrors.email}</span>}
             </div>
 
             {/* Password Input */}
-            <div className="form-control">
+            <div className="form-control w-full">
               <div className="flex justify-between items-center mb-2">
                 <label className="label-text font-medium">Password</label>
                 <button
@@ -313,14 +325,11 @@ const LoginPage = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {formErrors.password && (
-                <label className="label">
-                  <span className="label-text-alt text-error">{formErrors.password}</span>
-                </label>
-              )}
+              <span className="label-text-alt opacity-70">Minimum 6 characters</span>
+              {formErrors.password && <span className="label-text-alt text-error">{formErrors.password}</span>}
             </div>
 
-            {/* Remember Me */}
+            {/* Remember Me & Verification */}
             <div className="flex items-center justify-between">
               <label className="cursor-pointer label gap-3">
                 <input
@@ -330,10 +339,9 @@ const LoginPage = () => {
                   onChange={handleInputChange}
                   className="checkbox checkbox-sm"
                 />
-                <span className="label-text">Remember me</span>
+                <span className="label-text text-sm">Remember me</span>
               </label>
               
-              {/* Resend Verification Link */}
               <button
                 type="button"
                 onClick={handleResendVerification}
@@ -344,64 +352,58 @@ const LoginPage = () => {
             </div>
 
             {/* Submit Button */}
-            <button
-              type="submit"
+            <button 
+              type="submit" 
+              className={`btn btn-primary w-full ${loginMutation.isPending ? "loading" : ""}`} 
               disabled={loginMutation.isPending}
-              className="btn btn-primary w-full gap-2"
             >
-              {loginMutation.isPending ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Signing In...
-                </>
-              ) : (
+              {loginMutation.isPending ? "Signing In..." : (
                 <>
                   <LogIn className="w-4 h-4" />
                   Sign In
                 </>
               )}
             </button>
+
+            {/* Divider */}
+            <div className="divider text-base-content/50 text-sm">OR</div>
+
+            {/* Sign Up Link */}
+            <div className="text-center">
+              <span className="text-sm opacity-70">
+                Don't have an account?{" "}
+                <Link to="/signup" className="link link-primary font-semibold">Sign Up</Link>
+              </span>
+            </div>
+
+            {/* Security Notice - Optional */}
+            <div className="mt-4 pt-4 border-t border-base-300 text-center">
+              <p className="text-xs opacity-70">
+                Secure login with HTTP-only cookies. Your session is protected.
+              </p>
+            </div>
           </form>
-
-          {/* Divider */}
-          <div className="divider text-base-content/50 text-sm my-6">OR</div>
-
-          {/* Sign Up Link */}
-          <div className="text-center">
-            <p className="text-base-content/70 mb-4">
-              Don't have an account yet?
-            </p>
-            <Link 
-              to="/signup" 
-              className="btn btn-outline w-full gap-2"
-            >
-              <UserPlus className="w-4 h-4" />
-              Create New Account
-            </Link>
-          </div>
-
-          {/* Security Notice */}
-          <div className="mt-8 pt-6 border-t border-base-300 text-center">
-            <p className="text-xs text-base-content/50">
-              Secure login with HTTP-only cookies. Your session is protected.
-            </p>
-            <p className="text-xs text-base-content/50 mt-1">
-              By signing in, you agree to our{' '}
-              <Link to="/terms" className="link link-hover">Terms</Link> and{' '}
-              <Link to="/privacy" className="link link-hover">Privacy Policy</Link>
-            </p>
-          </div>
         </div>
 
-        {/* Footer Links */}
-        <div className="mt-6 text-center space-x-4">
-          <Link to="/" className="text-sm text-base-content/60 hover:text-base-content transition-colors">
-            ← Back to Home
-          </Link>
-          <span className="text-base-content/30">•</span>
-          <Link to="/login-help" className="text-sm text-base-content/60 hover:text-base-content transition-colors">
-            Having trouble logging in?
-          </Link>
+        {/* Right side Image - Consistent with SignupPage */}
+        <div className="hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 p-8">
+          <div className="text-center">
+            <img 
+              src="/Video-call-bro.png" 
+              alt="Video call illustration" 
+              className="w-full max-w-md object-contain mb-6" 
+            />
+            <h3 className="text-xl font-bold mb-2">Continue Your Language Journey</h3>
+            <p className="text-sm opacity-70 max-w-md">
+              Reconnect with your language partners and continue improving your skills through interactive conversations.
+            </p>
+            <div className="mt-6 p-4 bg-primary/5 rounded-lg">
+              <p className="text-xs opacity-70">
+                <strong>Note:</strong> If you haven't verified your email, please check your inbox 
+                or use the "Resend verification email" link.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

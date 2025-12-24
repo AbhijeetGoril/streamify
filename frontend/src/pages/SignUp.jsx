@@ -112,7 +112,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-base-100 to-base-200" data-theme="forest">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-base-100 to-base-200" >
       <div className="border border-primary/20 flex w-full max-w-5xl mx-auto bg-base-100 rounded-2xl shadow-2xl overflow-hidden">
         {/* Left side form */}
         <div className="w-full lg:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col">

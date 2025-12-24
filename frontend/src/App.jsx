@@ -18,11 +18,15 @@ import ForgotPasswordPage from "./pages/ForgetPasswordPage";
 import ResetPasswordPage from "./pages/ ResetPasswordPage";
 import PageLoader from "./components/PageLoader.jsx";
 import { useAuthUser } from "./hooks/useAuthUser.js";
+import Layout from "./components/Layout.jsx";
+import { useThemeStore } from "./store/useThemeStore.js";
 
 function App() {
   const { isLoading, authUser } = useAuthUser();
+  console.log("authuser:-",authUser)
   const isOnboarded = authUser?.isOnboarded;
-
+  const theme=useThemeStore((state)=>state.theme)
+ 
   if (isLoading) {
     return <PageLoader />;
   }
@@ -31,16 +35,16 @@ function App() {
     <BrowserRouter>
       {" "}
       {/* Wrap with BrowserRouter */}
-      <div className="h-screen" data-theme="night">
+      <div className="h-screen" data-theme={theme}>
         <Routes>
           {/* Public routes (accessible without auth) */}
           <Route
             path="/signup"
-            element={!authUser ? <SignUp /> : <Navigate to="/" />}
+            element={!authUser ? <SignUp /> : <Navigate to={isOnboarded?"/":"/onboarding"} />}
           />
           <Route
             path="/login"
-            element={!authUser ? <LoginPage /> : <Navigate to="/" />}
+            element={!authUser ? <LoginPage /> : <Navigate to={isOnboarded?"/":"/onboarding"} />}
           />
           <Route
             path="/forgot-password"
@@ -70,13 +74,23 @@ function App() {
             path="/"
             element={
               authUser && isOnboarded ? (
+                <Layout showSidebar={true}>
+                  <HomePage/>
+                </Layout>
+              ) : <Navigate to={!authUser?"/login":"/onboarding"}/>
+            }
+          />
+          <Route
+            path="/homepage"
+            element={
+              authUser && isOnboarded ? (
                 <HomePage />
               ) : <Navigate to={!authUser?"/login":"/onboarding"}/>
             }
           />
           <Route
             path="/onboarding"
-            element={authUser ? <OnboardingPage /> : <Navigate to="/login" />}
+            element={authUser ? (!isOnboarded ?<OnboardingPage/>:<Navigate to="/"/>) : <Navigate to="/login" />}
           />
           <Route
             path="/call"
@@ -88,7 +102,7 @@ function App() {
           />
           <Route
             path="/chat"
-            element={authUser ? <ChatPage /> : <Navigate to="/login" />}
+            element={authUser ? <Layout> <ChatPage /> </Layout> : <Navigate to="/login" />}
           />
         </Routes>
         <Toaster />
