@@ -23,7 +23,7 @@ import { useThemeStore } from "./store/useThemeStore.js";
 
 function App() {
   const { isLoading, authUser } = useAuthUser();
-  console.log("authuser:-",authUser)
+  
   const isOnboarded = authUser?.isOnboarded;
   const theme=useThemeStore((state)=>state.theme)
  

@@ -3,7 +3,6 @@ import nodemailer from 'nodemailer';
 export const sendEmail = async (to, subject, html, retries = 3) => {
   for (let i = 0; i < retries; i++) {
     try {
-      console.log(`📧 Attempt ${i + 1}/${retries} to send email to ${to}`);
       
       const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -20,7 +19,7 @@ export const sendEmail = async (to, subject, html, retries = 3) => {
         html,
       });
 
-      console.log(`✅ Email sent to ${to} (Attempt ${i + 1})`);
+
       return { success: true, attempt: i + 1 };
       
     } catch (error) {
@@ -29,7 +28,7 @@ export const sendEmail = async (to, subject, html, retries = 3) => {
       // Wait before retry (1s, 2s, 4s - exponential backoff)
       if (i < retries - 1) {
         const waitTime = Math.pow(2, i) * 1000;
-        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }

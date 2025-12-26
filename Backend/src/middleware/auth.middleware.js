@@ -15,7 +15,7 @@ export const protectRoute=async(req,res,next)=>{
     }
     
     const user =await User.findById(decode.userId).select("-password")
-    console.log(user)
+   
     if(!user){
       return res.status(401).json({success: false,message:"Unauthorized - user not foundss"})
     }
@@ -55,7 +55,6 @@ export const protectRoute=async(req,res,next)=>{
     req.user=user
     next()
   } catch (error) {
-    console.log(error)
     res.status(500).json({message:"Internal Server error",error:error.message})
   }
 }

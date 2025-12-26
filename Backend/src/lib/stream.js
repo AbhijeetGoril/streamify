@@ -15,7 +15,7 @@ export const upsertUser = async (userData) => {
       role: 'user'
     });
     
-    console.log(`✅ Stream Chat user upserted: ${userData.name}`);
+    
     return { success: true };
   } catch (error) {
     console.error('❌ Stream Chat error:', error.message);
@@ -36,7 +36,7 @@ export const createToken = (userId) => {
 export const initializeStreamChat = async () => {
   try {
     const result = await serverClient.queryUsers({});
-    console.log(`✅ Stream Chat connected. Users: ${result.users.length}`);
+    
     return { connected: true };
   } catch (error) {
     console.error('❌ Stream Chat initialization error:', error);

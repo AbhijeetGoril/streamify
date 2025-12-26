@@ -201,7 +201,7 @@ export async function verifyEmail(req, res) {
   try {
     const { token } = req.params;
 
-    console.log("🔐 Verification attempt for token:", token);
+  
 
     if (!token || token.length < 10) {
       return res.status(400).json({
@@ -225,7 +225,7 @@ export async function verifyEmail(req, res) {
 
     // Check if user is already verified
     if (userWithToken.isVerified) {
-      console.log("ℹ️ User already verified:", userWithToken.email);
+   
       return res.status(200).json({
         success: true,
         error: "ALREADY_VERIFIED",
@@ -244,7 +244,7 @@ export async function verifyEmail(req, res) {
       userWithToken.emailVerificationExpires &&
       new Date(userWithToken.emailVerificationExpires) < new Date()
     ) {
-      console.log("❌ Token expired for user:", userWithToken.email);
+    
       return res.status(400).json({
         success: false,
         error: "TOKEN_EXPIRED",
@@ -261,7 +261,7 @@ export async function verifyEmail(req, res) {
     userWithToken.emailVerificationExpires = undefined;
     await userWithToken.save();
 
-    console.log("✅ User verified successfully:", userWithToken.email);
+   
 
     return res.status(200).json({
       success: true,
@@ -547,7 +547,7 @@ export async function resetPassword(req, res) {
   try {
     const { token } = req.params;
     const { password } = req.body;
-    console.log(token)
+
     // Handle GET request (verify token)
     if (req.method === "GET") {
       const user = await User.findOne({
