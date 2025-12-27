@@ -1,15 +1,15 @@
+import Flag from "react-country-flag";
 import { LANGUAGE_TO_FLAG } from "../constants";
 
 import React from 'react'
 
-const getLangugeFlag = ({language}) => {
+const GetLangugeFlag = ({language}) => {
    if (!language) return null;
   const langlower = language.toLowerCase();
   const countryCode = LANGUAGE_TO_FLAG[langlower];
 
-  if (countryCode)
-    return (
-      <div >
+  console.log(countryCode)
+    return (<div >
         <Flag
           countryCode={countryCode || "US"}
           svg
@@ -18,6 +18,8 @@ const getLangugeFlag = ({language}) => {
         />
       </div>
     );
+
+    
 }
 
-export default getLangugeFlag
+export default GetLangugeFlag

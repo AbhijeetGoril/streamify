@@ -176,7 +176,6 @@ export async function getOutgoingRequests(req,res){
 
 export async function friendRequestReject(req,res){
   try {
-
     const {requestId}=req.params
     const friendRequest=await FriendRequest.findById(requestId)
    

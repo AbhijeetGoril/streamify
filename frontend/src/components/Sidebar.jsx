@@ -74,8 +74,8 @@ const Sidebar = () => {
                 <img src={authUser?.profilePic} alt="User Avatar"/>
               </div>
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm">{authUser?.fullName}</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate">{authUser?.fullName}</p>
               <p className="text-xs text-success flex items-center gap-1">
                 <span className="size-2 rounded-full bg-success inline-block "/>
                 Online

@@ -2,8 +2,9 @@ import React from "react";
 import { LANGUAGE_TO_FLAG } from "../constants";
 import Flag from "react-country-flag";
 import { Link } from 'react-router'
-import getLangugeFlag from "./getLangugeFlag.jSX";
+
 import capitialize from "./capitialize";
+import GetLangugeFlag from "./getLangugeFlag.jSX";
 const FriendCard = ({ friend }) => {
   return (
     <div className="card bg-base-200 hover:bg-base-300 transition-all duration-200 hover:shadow-lg rounded-2xl">
@@ -26,11 +27,11 @@ const FriendCard = ({ friend }) => {
         </div>
         <div className="flex flex-wrap gap-1.5 mt-2 mb-3">
           <span className="badge badge-secondary text-xs ">
-            {getLangugeFlag(friend.nativeLanguage)}
+            {<GetLangugeFlag language={friend.nativeLanguage} />}
             Navive: {capitialize(friend.nativeLanguage)}
           </span>
           <span className="badge  badge-outline text-xs">
-            {getLangugeFlag(friend.learningLanguage)}
+            {<GetLangugeFlag language={friend.learningLanguage} />}
             Learing: {capitialize(friend.learningLanguage)}
           </span>
         </div>

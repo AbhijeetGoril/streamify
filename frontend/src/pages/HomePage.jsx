@@ -11,8 +11,9 @@ import { CheckCheckIcon, MapPinIcon, UserPlusIcon, UsersIcon } from "lucide-reac
 import { Link } from "react-router";
 import FrindCard from "../components/FrindCard";
 import NoFriendsFound from "./NoFriendsFound";
-import getLangugeFlag from "../components/getLangugeFlag.jSX";
+
 import capitialize from "../components/capitialize";
+import GetLangugeFlag from "../components/getLangugeFlag.jSX";
 
 const HomePage = () => {
   const queryClient = useQueryClient();
@@ -36,12 +37,13 @@ const HomePage = () => {
       queryKey: ["outGoingFrindsreq"],
       queryFn: getOutGoingFrindsreq,
     });
+
    const { data: inCommingFriendReq, isLoading: loadingIncomming } =
     useQuery({
       queryKey: ["inCommingFriendReq"],
       queryFn: incommingFrinedReq,
     }); 
-    console.log(inCommingFriendReq)
+   
   const { mutate: sendFrindMutation ,isPending} = useMutation({
     mutationFn: sendFrindRequest,
     onSuccess: () =>
@@ -153,11 +155,11 @@ const HomePage = () => {
                       </div>
                       <div className="flex flex-wrap gap-1.5 mt-2 mb-3">
                                 <span className="badge badge-secondary text-xs ">
-                                  {getLangugeFlag(user.nativeLanguage)}
+                                  { <GetLangugeFlag language={user.nativeLanguage} />}
                                   Navive: {capitialize(user.nativeLanguage)}
                                 </span>
                                 <span className="badge  badge-outline text-xs">
-                                  {getLangugeFlag(user.learningLanguage)}
+                                  {<GetLangugeFlag language={user.learningLanguage} />}
                                   Learing: {capitialize(user.learningLanguage)}
                                 </span>
                       </div>

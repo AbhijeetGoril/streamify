@@ -97,8 +97,10 @@ function App() {
             element={authUser ? <CallPage /> : <Navigate to="/login" />}
           />
           <Route
-            path="/notification"
-            element={authUser ? <NotificationPage /> : <Navigate to="/login" />}
+            path="/notifications"
+            element={authUser ? <Layout showSidebar={true}>
+                  <NotificationPage /> 
+                </Layout> : <Navigate to="/login" />}
           />
           <Route
             path="/chat"

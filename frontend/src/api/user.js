@@ -57,3 +57,25 @@ export async function incommingFrinedReq() {
     );
   }
 }
+
+export async function acceptFriendRequest(id) {
+  try {
+    const res = await axiosInstance.post(`/users/friends-request/${id}/accept`);
+    return res.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "incomming friend req failed"
+    );
+  }
+}
+
+export async function rejectFriendRequest(id) {
+  try {
+    const res = await axiosInstance.post(`/users/reject-request/${id}`);
+    return res.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "incomming friend req failed"
+    );
+  }
+}
