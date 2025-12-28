@@ -103,8 +103,8 @@ function App() {
                 </Layout> : <Navigate to="/login" />}
           />
           <Route
-            path="/chat"
-            element={authUser ? <Layout> <ChatPage /> </Layout> : <Navigate to="/login" />}
+            path="/chat/:id"
+            element={authUser && isOnboarded ? <Layout showSidebar={false}> <ChatPage /> </Layout> : <Navigate to={ authUser?"/login":"/onboarding"} />}
           />
         </Routes>
         <Toaster />

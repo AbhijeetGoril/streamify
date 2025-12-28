@@ -2,3 +2,12 @@
 @plugin "daisyui" {
   themes: all;
 }
+
+.str-chat,
+.str-chat__channel {
+  height: 100%;
+}
+
+.str-chat__message-simple__image {
+  border-radius: 12px;
+}

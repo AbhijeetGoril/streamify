@@ -79,3 +79,14 @@ export async function rejectFriendRequest(id) {
     );
   }
 }
+
+export async function getSteramToken() {
+  try {
+    const res = await axiosInstance.get(`/chat/token`);
+    return res.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "get token req failed"
+    );
+  }
+}
