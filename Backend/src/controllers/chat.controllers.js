@@ -1,4 +1,4 @@
-import { createToken } from "../lib/stream.js";
+import { createToken, streamVideoClient } from "../lib/stream.js";
 
 export async function getStreamToken(req,res) {
   try {
@@ -10,5 +10,17 @@ export async function getStreamToken(req,res) {
       message: "Internal server error",
     });
   }
+}
 
+export async function getVideoToken(req,res) {
+  try {
+    const userId=req.user._id.toString();
+    const token= streamVideoClient.createToken(userId)
+    res.status(200).json({token})
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to generate video token",
+    });
+  }
 }

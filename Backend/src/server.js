@@ -24,6 +24,7 @@ dotenv.config({ path: envPath });
 import authRoute from "./routes/auth.route.js";
 import userRoute from "./routes/user.route.js";
 import chatRoute from "./routes/chat.route.js"
+import videoRoute from "./routes/video.route.js"
 import { connectDb } from "./lib/db.js";
 
 
@@ -32,7 +33,7 @@ const PORT = process.env.PORT || 5001;
 // In backend server.js
 app.use(
   cors({
-    origin: "http://localhost:5173",
+     origin: true, 
     credentials: true,
   })
 );
@@ -43,6 +44,7 @@ app.use(cookieParser())
 app.use("/api/auth", authRoute);
 app.use("/api/users",userRoute);
 app.use("/api/chat",chatRoute)
+app.use("/api/video",videoRoute)
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

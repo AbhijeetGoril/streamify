@@ -1,4 +1,5 @@
 import { StreamChat } from 'stream-chat';
+import { StreamClient } from "@stream-io/node-sdk";
 import 'dotenv/config'; // Add this at the very top
 
 const serverClient = StreamChat.getInstance(
@@ -43,3 +44,8 @@ export const initializeStreamChat = async () => {
     return { connected: false, error: error.message };
   }
 };
+
+export const streamVideoClient = new StreamClient(
+  process.env.STREAM_VIDEO_API_KEY,
+  process.env.STREAM_VIDEO_API_SECRET
+);

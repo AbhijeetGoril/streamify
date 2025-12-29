@@ -3,11 +3,12 @@ import { useParams } from "react-router";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useQuery } from "@tanstack/react-query";
 import { getSteramToken } from "../api/user";
-import { Chat, Channel, MessageList, MessageInput } from "stream-chat-react";
+import { Chat, Channel, MessageList, MessageInput, ChannelHeader,Window, Thread } from "stream-chat-react";
 import { StreamChat } from "stream-chat";
 import toast from "react-hot-toast";
 import { Video } from "lucide-react";
 import "stream-chat-react/dist/css/v2/index.css";
+import CallButton from "../components/CallButton";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
@@ -75,41 +76,33 @@ const ChatPage = () => {
 
   if (!chatClient || !channel) return null;
 
-  const members = Object.values(channel.state.members || {});
-  const otherUser = members.find((m) => m.user?.id !== authUser._id)?.user;
 
+ 
+  const handleVideoCall=()=>{
+      if(channel){
+        const callurl=`${window.location.origin}/call/${channel.id}`
+        channel.sendMessage({
+          text:`I've started a video call. Join me here: ${callurl}`
+        })
+        toast.success("Video call link sent successifully")
+      }
+  }
   return (
-    <div className="p-4 flex items-center justify-center bg-base-200 ">
-      <div className="w-full max-w-6xl h-[85vh] bg-white rounded-lg shadow-2xl overflow-hidden">
-        <Chat client={chatClient} theme="messaging light" >
-            <Channel channel={channel} >
-              <div className="w-full h-full flex flex-col ">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-base-200">
-                    <div className="flex items-center gap-3">
-                        <div  className="p-2 ring-2 ring-primary  rounded-full">
-                          <img src={otherUser?.image} className="w-10 h-10"/>
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm"> {otherUser?.name} </p>
-                          <p className="text-xs text-gray-500"> {members.length} members, {members.length} online </p>
-                        </div>
-                    </div>
-                    <button className=" px-3 p-2 rounded-2xl bg-primary text-base-content">
-                      <Video/>
-                    </button>
-                </div>
-                <div className="min-h-0">
-                  <MessageList/>
-                </div>
-                <div>
-                  <MessageInput  />
-                </div>
-              </div>
-              
-            </Channel>
-            
+    <div className="h-[93vh]">
+        <Chat client={chatClient}>
+
+          <Channel channel={channel}>
+            <div className="w-full relative">
+              <CallButton handleVideoCall={handleVideoCall}/>
+              <Window>
+                <ChannelHeader/>
+                <MessageList/>
+                <MessageInput/>
+              </Window>
+            </div>
+            <Thread/>
+          </Channel>
         </Chat>
-      </div>
     </div>
   );
 };

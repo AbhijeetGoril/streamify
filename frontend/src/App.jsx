@@ -93,7 +93,7 @@ function App() {
             element={authUser ? (!isOnboarded ?<OnboardingPage/>:<Navigate to="/"/>) : <Navigate to="/login" />}
           />
           <Route
-            path="/call"
+            path="/call/:callId"
             element={authUser ? <CallPage /> : <Navigate to="/login" />}
           />
           <Route
