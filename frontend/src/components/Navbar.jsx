@@ -26,7 +26,7 @@ const Navbar = () => {
             <ShipWheelIcon className='size-9 text-primary '/>
             <span className='text-3xl font-bold font-momo bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary tracking-wider '>Streamify</span> 
             </div>}
-            <div className='flex items-center'>
+            <div className='flex items-center ml-auto'>
               <div className='flex items-center gap-3 sm:gap-4 '>
             <Link to="/notifications">
               <button className='btn btn-ghost btn-circle'>

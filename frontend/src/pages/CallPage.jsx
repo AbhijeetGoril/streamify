@@ -1,75 +1,133 @@
-import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
 import {
   StreamVideo,
   StreamVideoClient,
   StreamCall,
-  DefaultCallLayout,
   CallControls,
+  SpeakerLayout,
+  StreamTheme,
+  CallingState,
+  useCallStateHooks,
 } from "@stream-io/video-react-sdk";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
+
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useQuery } from "@tanstack/react-query";
 import { getVideoToken } from "../api/video";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import PageLoader from "../components/PageLoader";
+import { useNavigate, useParams } from "react-router-dom";
+
+const VIDEO_API_KEY = import.meta.env.VITE_STREAM_VIDEO_API_KEY;
 
 const CallPage = () => {
   const { callId } = useParams();
-  const { authUser } = useAuthUser();
+  const { authUser, isLoading } = useAuthUser();
 
-  const [videoClient, setVideoClient] = useState(null);
+  const [client, setClient] = useState(null);
   const [call, setCall] = useState(null);
+  const [isConnecting, setIsConnecting] = useState(true);
 
-  const { data: tokenData, isLoading } = useQuery({
+  const { data: tokenData } = useQuery({
     queryKey: ["streamVideoToken"],
     queryFn: getVideoToken,
     enabled: !!authUser,
   });
 
   useEffect(() => {
-    if (!authUser || !tokenData?.token || !callId) return;
+    if (!tokenData?.token || !authUser || !callId) return;
 
-    const joinCall = async () => {
-      const client = new StreamVideoClient({
-        apiKey: import.meta.env.VITE_STREAM_VIDEO_API_KEY,
-        user: {
-          id: authUser._id,
-          name: authUser.fullname,
-          image: authUser.profilePic,
-        },
-        token: tokenData.token,
-      });
+    let videoClient;
+    let callInstance;
 
-      const newCall = client.call("default", callId);
-      await newCall.join({ create: true });
+    const initCall = async () => {
+      try {
+        videoClient = new StreamVideoClient({
+          apiKey: VIDEO_API_KEY,
+          user: {
+            id: authUser._id,
+            name: authUser.fullname,
+            image: authUser.profilePic,
+          },
+          token: tokenData.token,
+        });
 
-      setVideoClient(client);
-      setCall(newCall);
+        callInstance = videoClient.call("default", callId);
+        await callInstance.join({ create: true });
+
+        setClient(videoClient);
+        setCall(callInstance);
+      } catch (err) {
+        console.error(err);
+        toast.error("Could not join the call");
+      } finally {
+        setIsConnecting(false);
+      }
     };
 
-    joinCall();
+    initCall();
 
     return () => {
-      if (call) call.leave();
+      if (callInstance) callInstance.leave();
       if (videoClient) videoClient.disconnectUser();
     };
-  }, [authUser, tokenData, callId]);
+  }, [tokenData, authUser, callId]);
 
-  if (isLoading || !videoClient || !call) {
+  if (isLoading || isConnecting) return <PageLoader />;
+
+  if (!client || !call) {
     return (
       <div className="h-screen flex items-center justify-center">
-        Joining call…
+        Failed to initialize call
       </div>
     );
   }
 
   return (
-    <StreamVideo client={videoClient}>
+    <StreamVideo client={client}>
       <StreamCall call={call}>
-        <DefaultCallLayout />
-        <CallControls />
+        <CallUI />
       </StreamCall>
     </StreamVideo>
   );
 };
 
 export default CallPage;
+
+/* ---------------- UI ---------------- */
+
+const CallUI = () => {
+  const navigate = useNavigate();
+  const { useCallCallingState } = useCallStateHooks();
+  const callingState = useCallCallingState();
+
+  useEffect(() => {
+    if (callingState === CallingState.LEFT) {
+      navigate("/");
+    }
+  }, [callingState, navigate]);
+
+  if (callingState !== CallingState.JOINED) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-black text-white">
+        Connecting…
+      </div>
+    );
+  }
+
+  return (
+    <StreamTheme>
+      <div className="h-screen w-screen bg-black flex flex-col">
+        {/* MAIN VIDEO */}
+        <div className="flex-1">
+          <SpeakerLayout participantsBarPosition="none" />
+        </div>
+
+        {/* CONTROLS */}
+        <div className="pb-6 flex justify-center">
+          <CallControls />
+        </div>
+      </div>
+    </StreamTheme>
+  );
+};
