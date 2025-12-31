@@ -164,14 +164,13 @@ export async function login(req, res) {
     });
 
     // Set HTTP-only cookie
-    res.cookie("authToken", token, {
-      httpOnly: true,
-      secure: false, // on localhost always false
-      sameSite: "lax", // allow frontend <-> backend ports
-      domain: "localhost", // important for cross-port cookie
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+   res.cookie("authToken", token, {
+  httpOnly: true,
+  secure: isProduction,          // ✅ HTTPS only in prod
+  sameSite: isProduction ? "none" : "lax", // ✅ cross-site in prod
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+})
 
     return res.status(200).json({
       success: true,
