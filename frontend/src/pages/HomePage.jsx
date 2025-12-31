@@ -13,7 +13,7 @@ import FrindCard from "../components/FrindCard";
 import NoFriendsFound from "./NoFriendsFound";
 
 import capitialize from "../components/capitialize";
-import GetLangugeFlag from "../components/getLangugeFlag.jSX";
+import GetLangugeFlag from "../components/getLangugeFlag";
 
 const HomePage = () => {
   const queryClient = useQueryClient();
