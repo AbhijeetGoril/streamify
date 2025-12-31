@@ -24,10 +24,11 @@ const PORT = process.env.PORT || 5001;
 /* ---------------- CORS ---------------- */
 app.use(
   cors({
-    origin: true, // allow all origins (for now)
+    origin: "https://streamify-4fuv.onrender.com",
     credentials: true,
   })
 );
+
 
 /* ---------------- Middlewares ---------------- */
 app.use(express.json());

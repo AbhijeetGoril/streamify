@@ -122,7 +122,8 @@ export async function signup(req, res) {
 // Login
 export async function login(req, res) {
   const { email, password } = req.body;
-
+  const isProduction = process.env.NODE_ENV === "production";
+  console.log( process.env.NODE_ENV)
   try {
     if (!email || !password) {
       return res.status(400).json({
