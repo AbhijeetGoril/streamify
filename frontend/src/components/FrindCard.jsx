@@ -4,7 +4,7 @@ import Flag from "react-country-flag";
 import { Link } from 'react-router'
 
 import capitialize from "./capitialize";
-import GetLangugeFlag from "./getLangugeFlag.jSX";
+import GetLangugeFlag from "./getLangugeFlag";
 const FriendCard = ({ friend }) => {
   return (
     <div className="card bg-base-200 hover:bg-base-300 transition-all duration-200 hover:shadow-lg rounded-2xl">
